@@ -128,6 +128,7 @@ class Particle(object):
 
                 # TODO: compute the error between the z and expected_z (remember to normalize the angle)
                 error = np.array(measurement.z_bearing) - expected_z  # @Alex: plz calculate error
+                error = np.abs(np.mod(error, 2*np.pi))
 
                 # TODO: update the mean and covariance of the EKF for this landmark
                 landmark.mu = np.conjugate(landmark.mu) + K_t * error
