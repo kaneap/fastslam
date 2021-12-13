@@ -13,4 +13,5 @@ class SensorMeasurement(object):
 
     def __str__(self):
         return "SensorMeasurement(landmark_id = {0}, z_range = {1} m, z_bearing = {2} rad)".format(
-            self.landmark_id, self.z_range, self.z_bearing)
+            self.landmark_id, self.z_range, self.z_bearing
+        )

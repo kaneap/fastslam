@@ -14,7 +14,9 @@ class LandmarkEKF(object):
         self.sigma = np.zeros((2, 2))  # covariance as 2x2 matrix
 
     def __str__(self):
-        return "LandmarkEKF(observed  = {0}, mu = {1}, sigma = {2})".format(self.observed, self.mu, self.sigma)
+        return "LandmarkEKF(observed  = {0}, mu = {1}, sigma = {2})".format(
+            self.observed, self.mu, self.sigma
+        )
 
 
 class Particle(object):
@@ -31,7 +33,7 @@ class Particle(object):
         self.noise = noise
 
         # initialize robot pose at origin
-        self.pose = np.vstack([0., 0., 0.])
+        self.pose = np.vstack([0.0, 0.0, 0.0])
 
         # initialize weights uniformly
         self.weight = 1.0 / float(num_particles)
@@ -128,19 +130,27 @@ class Particle(object):
         landmark_y = landmark_ekf.mu[1]
 
         # use the current state of the particle to predict the measurement
-        expected_range = np.sqrt((landmark_x - self.pose[0]) ** 2 + (landmark_y - self.pose[1]) ** 2)
-        angle = atan2(landmark_y - self.pose[1], landmark_x - self.pose[0]) - self.pose[2]
+        expected_range = np.sqrt(
+            (landmark_x - self.pose[0]) ** 2 + (landmark_y - self.pose[1]) ** 2
+        )
+        angle = (
+            atan2(landmark_y - self.pose[1], landmark_x - self.pose[0]) - self.pose[2]
+        )
         expected_bearing = normalize_angle(angle)
 
         h = [expected_range, expected_bearing]
 
         # Compute the Jacobian H of the measurement z with respect to the landmark position
         H = np.zeros((2, 2))
-        H[0, 0] = ((landmark_x - self.pose[0]) / expected_range)  # d_range / d_lx
-        H[0, 1] = ((landmark_y - self.pose[1]) / expected_range)  # d_range / d_ly
+        H[0, 0] = (landmark_x - self.pose[0]) / expected_range  # d_range / d_lx
+        H[0, 1] = (landmark_y - self.pose[1]) / expected_range  # d_range / d_ly
 
-        H[1, 0] = ((self.pose[1] - landmark_y) / (expected_range ** 2))  # d_bearing / d_lx
-        H[1, 1] = ((landmark_x - self.pose[0]) / (expected_range ** 2))  # d_bearing / d_ly
+        H[1, 0] = (self.pose[1] - landmark_y) / (
+            expected_range ** 2
+        )  # d_bearing / d_lx
+        H[1, 1] = (landmark_x - self.pose[0]) / (
+            expected_range ** 2
+        )  # d_bearing / d_ly
 
         return h, H
 
@@ -149,9 +159,9 @@ def normalize_angle(angle):
     """Normalize the angle between -pi and pi"""
 
     while angle > pi:
-        angle = angle - 2. * pi
+        angle = angle - 2.0 * pi
 
     while angle < -pi:
-        angle = angle + 2. * pi
+        angle = angle + 2.0 * pi
 
     return angle

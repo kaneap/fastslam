@@ -19,7 +19,7 @@ from src.timestep import TimeStep
 
 
 def main():
-    '''Main function of the program.
+    """Main function of the program.
 
     This script calls all the required functions in the correct order.
     You can change the number of steps the filter runs for to ease the
@@ -28,13 +28,13 @@ def main():
 
     If you are unsure about the input and return values of functions you
     should read their documentation which tells you the expected dimensions.
-    '''
+    """
 
     # Read world data, i.e. landmarks. The true landmark positions are not given to the Particle
-    landmarks_truth = read_world('data/world.dat')
+    landmarks_truth = read_world("data/world.dat")
 
     # Read sensor readings, i.e. odometry and range-bearing sensor
-    data = read_sensor_data('data/sensor_data.dat')
+    data = read_sensor_data("data/sensor_data.dat")
 
     # how many particles
     num_particles = 100
@@ -45,13 +45,22 @@ def main():
     noise = [0.005, 0.01, 0.005]
 
     # initialize the particles array
-    particles = [Particle(num_particles, num_landmarks, noise) for _ in range(num_particles)]
+    particles = [
+        Particle(num_particles, num_landmarks, noise) for _ in range(num_particles)
+    ]
 
     # set the axis dimensions
     plotter = Plotter(data, particles, landmarks_truth)
 
-    anim = animation.FuncAnimation(plt.gcf(), plotter.fast_slam, frames=np.arange(0, len(data)),
-                                   init_func=plotter.plot_state_init, interval=20, blit=True, repeat=False)
+    anim = animation.FuncAnimation(
+        plt.gcf(),
+        plotter.fast_slam,
+        frames=np.arange(0, len(data)),
+        init_func=plotter.plot_state_init,
+        interval=20,
+        blit=True,
+        repeat=False,
+    )
     if anim:
         plt.show()
 
@@ -76,7 +85,7 @@ def read_world(filename):
         for line in world_file:
             line_s = line.rstrip()  # remove newline character
 
-            line_spl = line_s.split(' ')
+            line_spl = line_s.split(" ")
 
             landmarks[int(line_spl[0])] = [float(line_spl[1]), float(line_spl[2])]
 
@@ -90,7 +99,7 @@ def read_sensor_data(filename):
 
     The data is returned as an array of time steps, each time step containing
     odometry data and sensor measurements.
-    
+
     Usage:
     - access the readings for timestep t:
       data[t]
@@ -127,26 +136,27 @@ def read_sensor_data(filename):
     with open(filename) as data_file:
         for line in data_file:
             line_s = line.rstrip()  # remove the new line character
-            line_spl = line_s.split(' ')  # split the line
-            if line_spl[0] == 'ODOMETRY':
+            line_spl = line_s.split(" ")  # split the line
+            if line_spl[0] == "ODOMETRY":
                 if not first_time:
-                    data.append(TimeStep(
-                        odom=odom,
-                        sensor=sensor_measurements
-                    ))
+                    data.append(TimeStep(odom=odom, sensor=sensor_measurements))
                     sensor_measurements = []
                 first_time = False
-                odom = Odometry(r1=float(line_spl[1]), t=float(line_spl[2]), r2=float(line_spl[3]))
-            if line_spl[0] == 'SENSOR':
-                sensor_measurements.append(SensorMeasurement(
-                    landmark_id=int(line_spl[1]),
-                    z_range=float(line_spl[2]),
-                    z_bearing=float(line_spl[3])
-                ))
+                odom = Odometry(
+                    r1=float(line_spl[1]), t=float(line_spl[2]), r2=float(line_spl[3])
+                )
+            if line_spl[0] == "SENSOR":
+                sensor_measurements.append(
+                    SensorMeasurement(
+                        landmark_id=int(line_spl[1]),
+                        z_range=float(line_spl[2]),
+                        z_bearing=float(line_spl[3]),
+                    )
+                )
 
     data.append(TimeStep(odom=odom, sensor=sensor_measurements))
     return data
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
