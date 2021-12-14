@@ -116,25 +116,27 @@ class Particle(object):
 
                 # TODO: compute the measurement covariance
                 s_t = (
-                    np.dot(np.dot(H, np.conjugate(landmark.sigma)), np.transpose(H))
+                    np.matmul(np.matmul(H, np.conjugate(landmark.sigma)), np.transpose(H))
                     + Q_t
                 )
 
                 # TODO: calculate the Kalman gain
-                K_t = np.dot(
-                    np.dot(np.conjugate(landmark.sigma), np.transpose(H)),
+                K_t = np.matmul(
+                    np.matmul(landmark.sigma, np.transpose(H)),
                     np.linalg.inv(s_t),
                 )
 
                 # compute the error between the z and expected_z (remember to normalize the angle)
-                error = np.array(measurement.z_bearing) - expected_z  # @Alex: plz calculate error
-                error = np.abs(np.mod(error, 2*np.pi))
+                error = np.array([measurement.z_range, measurement.z_bearing]) - expected_z 
+                error[0] = np.abs(np.mod(error[0], 2*np.pi))
+                error[1] = np.abs(error[1])
 
                 # update the mean and covariance of the EKF for this landmark
                 # FIXME: this is not working (why are you using conjugate?)
-                landmark.mu = np.conjugate(landmark.mu) + K_t * error
+                difference = np.matmul(K_t, error)
+                landmark.mu = landmark.mu + difference
                 landmark.sigma = np.dot(
-                    (np.identity(2) - K_t * H), np.conjugate(landmark.sigma)
+                    (np.identity(2) - np.matmul(K_t, H)), landmark.sigma
                 )
 
                 # compute the likelihood of this observation, multiply with the former weight
