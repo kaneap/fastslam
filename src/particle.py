@@ -126,17 +126,18 @@ class Particle(object):
                     np.linalg.inv(s_t),
                 )
 
-                # TODO: compute the error between the z and expected_z (remember to normalize the angle)
+                # compute the error between the z and expected_z (remember to normalize the angle)
                 error = np.array(measurement.z_bearing) - expected_z  # @Alex: plz calculate error
                 error = np.abs(np.mod(error, 2*np.pi))
 
-                # TODO: update the mean and covariance of the EKF for this landmark
+                # update the mean and covariance of the EKF for this landmark
+                # FIXME: this is not working (why are you using conjugate?)
                 landmark.mu = np.conjugate(landmark.mu) + K_t * error
                 landmark.sigma = np.dot(
                     (np.identity(2) - K_t * H), np.conjugate(landmark.sigma)
                 )
 
-                # TODO: compute the likelihood of this observation, multiply with the former weight
+                # compute the likelihood of this observation, multiply with the former weight
                 # to account for observing several features in one time step
                 self.weight = self.get_probability(expected_z, measurement) * self.weight
                 # @Alex: what am I supposed to do with this likelihood now?
