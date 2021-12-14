@@ -1,3 +1,4 @@
+import copy
 import random
 from math import atan
 
@@ -5,6 +6,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 from numpy import pi, sqrt
+
 
 # Chi square inverse cumulative distribution function for alpha = 0.95
 # and 2 degrees of freedom (see lookup table in statistics textbook)

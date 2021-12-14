@@ -95,16 +95,16 @@ class Particle(object):
                 # TODO: Initialize its position based on the measurement and the current Particle pose:
                 # the absolute bearing in radians
                 absolute_bearing = robot_pose[2] + measurement.z_bearing
-                landmark_x = self.pose[0] + np.sin(absolute_bearing) * measurement.z_range
-                landmark_y = self.pose[1] + np.cos(absolute_bearing) * measurement.z_range
+                landmark_x = self.pose[0] + np.cos(absolute_bearing) * measurement.z_range
+                landmark_y = self.pose[1] + np.sin(absolute_bearing) * measurement.z_range
 
                 # get the Jacobian
                 [h, H] = self.measurement_model(landmark)
 
                 # TODO: initialize the EKF for this landmark
                 landmark.mu = np.vstack([landmark_x, landmark_y])
-                landmark.sigma = np.dot(
-                    np.dot(np.linalg.inv(H), Q_t), np.transpose(np.linalg.inv(H))
+                landmark.sigma = np.matmul(
+                    np.matmul(np.linalg.inv(H), Q_t), np.transpose(np.linalg.inv(H))
                 )  # see exercise description
 
                 # Indicate that this landmark has been observed
@@ -122,36 +122,26 @@ class Particle(object):
 
                 # TODO: calculate the Kalman gain
                 K_t = np.matmul(
-                    np.matmul(landmark.sigma, np.transpose(H)),
+                    np.matmul(np.conj(landmark.sigma), np.transpose(H)),
                     np.linalg.inv(s_t),
                 )
 
                 # compute the error between the z and expected_z (remember to normalize the angle)
-                measurement.z_bearing = normalize_angle(measurement.z_bearing)
-                error = np.asarray(expected_z) - np.asarray([measurement.z_range, measurement.z_bearing])
+                error = [measurement.z_range - expected_z[0], normalize_angle(measurement.z_bearing) - expected_z[1]]
 
                 # update the mean and covariance of the EKF for this landmark
-                difference = [measurement.z_range - expected_z[0], measurement.z_bearing - expected_z[1]]
-                landmark.mu = landmark.mu + np.matmul(K_t, difference)
+                landmark.mu = np.conj(landmark.mu) + np.matmul(K_t, error)
                 landmark.sigma = np.matmul(
                     (np.identity(2) - np.matmul(K_t, H)), np.conjugate(landmark.sigma)
                 )
 
                 # compute the likelihood of this observation, multiply with the former weight
                 # to account for observing several features in one time step
-                #self.weight = self.get_probability(expected_z, measurement) * self.weight
+                self.weight = self.get_probability(error) * self.weight
 
-    def get_probability(self, expected_z, measurement) -> float:
-        distance_diff = expected_z[0] - measurement.z_range
-        angle_diff = expected_z[1] - measurement.z_bearing
-
-        distance_prob = (1/(np.std(distance_diff) * np.sqrt(2*np.pi))) * np.exp(
-            -0.5
-            * ((distance_diff - np.mean(distance_diff)) ** 2 / np.std(distance_diff) ** 2)
-        )
-        angle_prob = (1/(np.std(distance_diff) * np.sqrt(2*np.pi))) * np.exp(
-            -0.5 * ((angle_diff - np.mean(angle_diff)) / np.std(angle_diff)) ** 2
-        )
+    def get_probability(self, error) -> float:
+        distance_prob = np.exp((-error[0]**2)/2) / np.sqrt(2*np.pi)
+        angle_prob = np.exp((-error[1]**2)/2) / np.sqrt(2*np.pi)
         return distance_prob * angle_prob
 
     def measurement_model(self, landmark_ekf) -> Tuple[List[float], np.array]:
