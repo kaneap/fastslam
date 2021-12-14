@@ -127,35 +127,29 @@ class Particle(object):
                 )
 
                 # compute the error between the z and expected_z (remember to normalize the angle)
-                error = np.asarray([measurement.z_range, measurement.z_bearing]) - np.asarray(expected_z)
-                error[0] = np.abs(np.mod(error[0], 2*np.pi))
-                error[1] = np.abs(error[1])
+                measurement.z_bearing = normalize_angle(measurement.z_bearing)
+                error = np.asarray(expected_z) - np.asarray([measurement.z_range, measurement.z_bearing])
 
                 # update the mean and covariance of the EKF for this landmark
-                # FIXME: this is not working (why are you using conjugate?)
-                difference = expected_z - landmark.mu
+                difference = [measurement.z_range - expected_z[0], measurement.z_bearing - expected_z[1]]
                 landmark.mu = landmark.mu + np.matmul(K_t, difference)
-                landmark.sigma = np.dot(
+                landmark.sigma = np.matmul(
                     (np.identity(2) - np.matmul(K_t, H)), np.conjugate(landmark.sigma)
                 )
 
                 # compute the likelihood of this observation, multiply with the former weight
                 # to account for observing several features in one time step
-                self.weight = self.get_probability(expected_z, measurement) * self.weight
+                #self.weight = self.get_probability(expected_z, measurement) * self.weight
 
     def get_probability(self, expected_z, measurement) -> float:
-        x_diff = expected_z[0] - self.pose[0]
-        y_diff = expected_z[1] - self.pose[1]
-        expected_distance = np.sqrt(np.power(x_diff, 2) + np.power(y_diff, 2))
-        expected_angle = np.arctan2(y_diff, x_diff) - self.pose[2]
-        distance_diff = expected_distance - measurement.z_range
-        angle_diff = expected_angle - measurement.z_bearing
+        distance_diff = expected_z[0] - measurement.z_range
+        angle_diff = expected_z[1] - measurement.z_bearing
 
-        distance_prob = (np.pi * np.std(distance_diff)) * np.exp(
+        distance_prob = (1/(np.std(distance_diff) * np.sqrt(2*np.pi))) * np.exp(
             -0.5
-            * ((distance_diff - np.mean(distance_diff)) / np.std(distance_diff)) ** 2
+            * ((distance_diff - np.mean(distance_diff)) ** 2 / np.std(distance_diff) ** 2)
         )
-        angle_prob = (np.pi * np.std(angle_diff)) * np.exp(
+        angle_prob = (1/(np.std(distance_diff) * np.sqrt(2*np.pi))) * np.exp(
             -0.5 * ((angle_diff - np.mean(angle_diff)) / np.std(angle_diff)) ** 2
         )
         return distance_prob * angle_prob
