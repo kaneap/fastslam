@@ -116,7 +116,7 @@ class Particle(object):
 
                 # TODO: compute the measurement covariance
                 s_t: np.array = (
-                    np.matmul(np.matmul(H, np.conjugate(landmark.sigma)), np.transpose(H))
+                    np.matmul(np.matmul(H, landmark.sigma), np.transpose(H))
                     + Q_t
                 )
 
@@ -130,9 +130,9 @@ class Particle(object):
                 error = [measurement.z_range - expected_z[0], normalize_angle(measurement.z_bearing) - expected_z[1]]
 
                 # update the mean and covariance of the EKF for this landmark
-                landmark.mu = np.conj(landmark.mu) + np.matmul(K_t, error)
+                landmark.mu = landmark.mu + np.matmul(K_t, error)
                 landmark.sigma = np.matmul(
-                    (np.identity(2) - np.matmul(K_t, H)), np.conjugate(landmark.sigma)
+                    (np.identity(2) - np.matmul(K_t, H)), landmark.sigma
                 )
 
                 # compute the likelihood of this observation, multiply with the former weight
