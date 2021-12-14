@@ -8,6 +8,8 @@ FastSLAM algorithm for range-bearing landmark observations.
 from __future__ import print_function, division
 
 import numpy as np
+import matplotlib
+matplotlib.use("TkAgg")
 from matplotlib import animation
 from matplotlib import pyplot as plt
 

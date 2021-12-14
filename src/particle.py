@@ -1,5 +1,6 @@
 import random
 from math import atan2
+from typing import List, Tuple
 
 import numpy as np
 from numpy import cos, sin, pi
@@ -92,8 +93,7 @@ class Particle(object):
             # If the landmark is observed for the first time:
             if not landmark.observed:
                 # TODO: Initialize its position based on the measurement and the current Particle pose:
-
-                #the absolute bearing in radians
+                # the absolute bearing in radians
                 absolute_bearing = robot_pose[2] + measurement.z_bearing
                 landmark_x = self.pose[0] + np.sin(absolute_bearing) * measurement.z_range
                 landmark_y = self.pose[1] + np.cos(absolute_bearing) * measurement.z_range
@@ -112,10 +112,10 @@ class Particle(object):
 
             else:
                 # get the expected measurement and the Jacobian
-                [expected_z, H] = self.measurement_model(landmark)
+                expected_z, H = self.measurement_model(landmark)
 
                 # TODO: compute the measurement covariance
-                s_t = (
+                s_t: np.array = (
                     np.matmul(np.matmul(H, np.conjugate(landmark.sigma)), np.transpose(H))
                     + Q_t
                 )
@@ -127,31 +127,30 @@ class Particle(object):
                 )
 
                 # compute the error between the z and expected_z (remember to normalize the angle)
-                error = np.array([measurement.z_range, measurement.z_bearing]) - expected_z 
+                error = np.asarray([measurement.z_range, measurement.z_bearing]) - np.asarray(expected_z)
                 error[0] = np.abs(np.mod(error[0], 2*np.pi))
                 error[1] = np.abs(error[1])
 
                 # update the mean and covariance of the EKF for this landmark
                 # FIXME: this is not working (why are you using conjugate?)
-                difference = np.matmul(K_t, error)
-                landmark.mu = landmark.mu + difference
+                difference = expected_z - landmark.mu
+                landmark.mu = landmark.mu + np.matmul(K_t, difference)
                 landmark.sigma = np.dot(
-                    (np.identity(2) - np.matmul(K_t, H)), landmark.sigma
+                    (np.identity(2) - np.matmul(K_t, H)), np.conjugate(landmark.sigma)
                 )
 
                 # compute the likelihood of this observation, multiply with the former weight
                 # to account for observing several features in one time step
                 self.weight = self.get_probability(expected_z, measurement) * self.weight
-                # @Alex: what am I supposed to do with this likelihood now?
 
-    def get_probability(self, expected_z, measurement):
-        # see lecture 5 "sensor models" slide 39
+    def get_probability(self, expected_z, measurement) -> float:
         x_diff = expected_z[0] - self.pose[0]
         y_diff = expected_z[1] - self.pose[1]
         expected_distance = np.sqrt(np.power(x_diff, 2) + np.power(y_diff, 2))
         expected_angle = np.arctan2(y_diff, x_diff) - self.pose[2]
         distance_diff = expected_distance - measurement.z_range
         angle_diff = expected_angle - measurement.z_bearing
+
         distance_prob = (np.pi * np.std(distance_diff)) * np.exp(
             -0.5
             * ((distance_diff - np.mean(distance_diff)) / np.std(distance_diff)) ** 2
@@ -161,7 +160,7 @@ class Particle(object):
         )
         return distance_prob * angle_prob
 
-    def  measurement_model(self, landmark_ekf):
+    def measurement_model(self, landmark_ekf) -> Tuple[List[float], np.array]:
         """Compute the expected measurement for a landmark and the Jacobian
 
         - landmark_ekf: EKF representing the landmark
